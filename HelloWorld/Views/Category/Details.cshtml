@@ -1,0 +1,21 @@
+﻿@model HelloWorld.Models.Category
+@{ ViewData["Title"] = "Category Details"; }
+
+<h1>Category Details</h1>
+
+<div class="card" style="max-width:500px">
+    <div class="card-body">
+        <dl class="row">
+            <dt class="col-sm-4">Name</dt>
+            <dd class="col-sm-8">@Model.Name</dd>
+
+            <dt class="col-sm-4">Description</dt>
+            <dd class="col-sm-8">@(Model.Description ?? "—")</dd>
+        </dl>
+    </div>
+</div>
+
+<div class="mt-3">
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Edit</a>
+    <a asp-action="Index" class="btn btn-secondary">Back to List</a>
+</div>

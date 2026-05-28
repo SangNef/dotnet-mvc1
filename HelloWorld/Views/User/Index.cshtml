@@ -1,0 +1,268 @@
+@model HelloWorld.Models.UserFilterViewModel
+
+@{
+    ViewData["Title"] = "Người dùng";
+
+    var nameSort  = string.IsNullOrEmpty(Model.SortOrder) ? "name_desc" : "";
+    var emailSort = Model.SortOrder == "email_asc" ? "email_desc" : "email_asc";
+    var dateSort  = Model.SortOrder == "date_asc"  ? "date_desc"  : "date_asc";
+
+    var nameIcon  = Model.SortOrder == "name_desc"  ? "bi-arrow-down"
+                  : string.IsNullOrEmpty(Model.SortOrder) ? "bi-arrow-up"
+                  : "bi-arrow-down-up";
+    var emailIcon = Model.SortOrder == "email_desc" ? "bi-arrow-down"
+                  : Model.SortOrder == "email_asc"  ? "bi-arrow-up"
+                  : "bi-arrow-down-up";
+    var dateIcon  = Model.SortOrder == "date_desc"  ? "bi-arrow-down"
+                  : Model.SortOrder == "date_asc"   ? "bi-arrow-up"
+                  : "bi-arrow-down-up";
+}
+
+@Html.AntiForgeryToken()
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Danh sách người dùng</h1>
+    <a asp-action="Create" class="btn btn-primary">+ Thêm người dùng</a>
+</div>
+
+<form method="get" asp-action="Index" class="row g-2 mb-3">
+    <div class="col-md-4">
+        <input type="text" name="Keyword" value="@Model.Keyword"
+               class="form-control" placeholder="Tìm theo tên hoặc email..." />
+    </div>
+    <div class="col-md-3">
+        <div class="input-group">
+            <span class="input-group-text"><i class="bi bi-calendar-range"></i></span>
+            <input type="text" id="dateRangePicker" name="DateRange" value="@Model.DateRange"
+                   class="form-control" placeholder="dd/mm/yyyy - dd/mm/yyyy" readonly />
+        </div>
+    </div>
+    <div class="col-md-3 d-flex gap-2">
+        <button type="submit" class="btn btn-secondary flex-fill">Lọc</button>
+        @if (!string.IsNullOrEmpty(Model.Keyword) || !string.IsNullOrEmpty(Model.DateRange) || !string.IsNullOrEmpty(Model.SortOrder))
+        {
+            <a asp-action="Index" class="btn btn-outline-secondary">✕</a>
+        }
+    </div>
+</form>
+
+<div class="mb-2">
+    <button type="button" id="btnDeleteSelected" class="btn btn-danger" disabled>
+        <i class="bi bi-trash"></i> Xóa đã chọn (<span id="selectedCount">0</span>)
+    </button>
+</div>
+
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th style="width:40px">
+                <input type="checkbox" id="checkAll" class="form-check-input" />
+            </th>
+            <th>
+                <a asp-action="Index" asp-route-Keyword="@Model.Keyword" asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@nameSort" class="text-white text-decoration-none">
+                    Họ tên <i class="bi @nameIcon"></i>
+                </a>
+            </th>
+            <th>
+                <a asp-action="Index" asp-route-Keyword="@Model.Keyword" asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@emailSort" class="text-white text-decoration-none">
+                    Email <i class="bi @emailIcon"></i>
+                </a>
+            </th>
+            <th>Vai trò</th>
+            <th class="text-nowrap">
+                <a asp-action="Index" asp-route-Keyword="@Model.Keyword" asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@dateSort" class="text-white text-decoration-none">
+                    Ngày tạo <i class="bi @dateIcon"></i>
+                </a>
+            </th>
+            <th style="width:180px"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var item in Model.Users)
+        {
+            <tr>
+                <td>
+                    <input type="checkbox" class="user-checkbox form-check-input" value="@item.Id" />
+                </td>
+                <td>@item.FullName</td>
+                <td>@item.Email</td>
+                <td>
+                    @if (item.Role == "Admin")
+                    {
+                        <span class="badge bg-danger">Admin</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-primary">Member</span>
+                    }
+                </td>
+                <td class="text-nowrap">@item.CreatedAt.ToString("dd/MM/yyyy")</td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@item.Id" class="btn btn-sm btn-info">Chi tiết</a>
+                    <a asp-action="Edit"    asp-route-id="@item.Id" class="btn btn-sm btn-warning">Sửa</a>
+                    <a asp-action="Delete"  asp-route-id="@item.Id" class="btn btn-sm btn-danger">Xóa</a>
+                </td>
+            </tr>
+        }
+        @if (!Model.Users.Any())
+        {
+            <tr>
+                <td colspan="6" class="text-center text-muted py-4">Không có người dùng nào.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.Users.TotalPages > 1)
+{
+    int cur   = Model.Users.PageIndex;
+    int total = Model.Users.TotalPages;
+    int from  = Math.Max(2, cur - 2);
+    int to    = Math.Min(total - 1, cur + 2);
+
+    <nav>
+        <ul class="pagination justify-content-center flex-wrap">
+
+            <li class="page-item @(!Model.Users.HasPreviousPage ? "disabled" : "")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-pageIndex="@(cur - 1)"
+                   asp-route-Keyword="@Model.Keyword"
+                   asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@Model.SortOrder">«</a>
+            </li>
+
+            <li class="page-item @(cur == 1 ? "active" : "")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-pageIndex="1"
+                   asp-route-Keyword="@Model.Keyword"
+                   asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@Model.SortOrder">1</a>
+            </li>
+
+            @if (from > 2)
+            {
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            }
+
+            @for (int i = from; i <= to; i++)
+            {
+                <li class="page-item @(i == cur ? "active" : "")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-pageIndex="@i"
+                       asp-route-Keyword="@Model.Keyword"
+                       asp-route-DateRange="@Model.DateRange"
+                       asp-route-SortOrder="@Model.SortOrder">@i</a>
+                </li>
+            }
+
+            @if (to < total - 1)
+            {
+                <li class="page-item disabled"><span class="page-link">…</span></li>
+            }
+
+            <li class="page-item @(cur == total ? "active" : "")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-pageIndex="@total"
+                   asp-route-Keyword="@Model.Keyword"
+                   asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@Model.SortOrder">@total</a>
+            </li>
+
+            <li class="page-item @(!Model.Users.HasNextPage ? "disabled" : "")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-pageIndex="@(cur + 1)"
+                   asp-route-Keyword="@Model.Keyword"
+                   asp-route-DateRange="@Model.DateRange"
+                   asp-route-SortOrder="@Model.SortOrder">»</a>
+            </li>
+
+        </ul>
+    </nav>
+}
+
+@section Scripts {
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.css" />
+    <script src="https://cdn.jsdelivr.net/npm/moment/moment.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/daterangepicker/daterangepicker.min.js"></script>
+    <script>
+        // Date range picker
+        const existingRange = '@Model.DateRange';
+        const options = {
+            autoUpdateInput: false,
+            locale: { cancelLabel: 'Xóa', applyLabel: 'Áp dụng', format: 'DD/MM/YYYY' },
+            ranges: {
+                'Hôm nay':     [moment(), moment()],
+                '7 ngày qua':  [moment().subtract(6, 'days'), moment()],
+                '30 ngày qua': [moment().subtract(29, 'days'), moment()],
+                'Tháng này':   [moment().startOf('month'), moment().endOf('month')],
+                'Tháng trước': [moment().subtract(1, 'month').startOf('month'), moment().subtract(1, 'month').endOf('month')]
+            }
+        };
+        if (existingRange) {
+            const parts = existingRange.split(' - ');
+            options.startDate = moment(parts[0], 'DD/MM/YYYY');
+            options.endDate   = moment(parts[1], 'DD/MM/YYYY');
+            options.autoUpdateInput = true;
+        }
+        $('#dateRangePicker').daterangepicker(options);
+        $('#dateRangePicker').on('apply.daterangepicker', function (ev, picker) {
+            $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format('DD/MM/YYYY'));
+        });
+        $('#dateRangePicker').on('cancel.daterangepicker', function () {
+            $(this).val('');
+        });
+
+        // Checkbox logic
+        const checkAll      = document.getElementById('checkAll');
+        const checkboxes    = () => document.querySelectorAll('.user-checkbox');
+        const btnDelete     = document.getElementById('btnDeleteSelected');
+        const selectedCount = document.getElementById('selectedCount');
+
+        function updateDeleteBtn() {
+            const checked = document.querySelectorAll('.user-checkbox:checked').length;
+            selectedCount.textContent = checked;
+            btnDelete.disabled = checked === 0;
+        }
+
+        checkAll.addEventListener('change', function () {
+            checkboxes().forEach(cb => cb.checked = this.checked);
+            updateDeleteBtn();
+        });
+
+        document.addEventListener('change', function (e) {
+            if (e.target.classList.contains('user-checkbox')) {
+                checkAll.checked = [...checkboxes()].every(cb => cb.checked);
+                updateDeleteBtn();
+            }
+        });
+
+        // Delete selected
+        btnDelete.addEventListener('click', function () {
+            const ids = [...document.querySelectorAll('.user-checkbox:checked')].map(cb => cb.value);
+            if (ids.length === 0) return;
+
+            if (!confirm(`Xóa ${ids.length} người dùng đã chọn?`)) return;
+
+            $.ajax({
+                url: '@Url.Action("DeleteSelected", "User")',
+                type: 'POST',
+                data: { ids: ids },
+                headers: { 'RequestVerificationToken': $('input[name="__RequestVerificationToken"]').val() },
+                success: function (res) {
+                    if (res.success) {
+                        alert(res.message);
+                        location.reload();
+                    } else {
+                        alert(res.message);
+                    }
+                },
+                error: function () {
+                    alert('Đã xảy ra lỗi, vui lòng thử lại.');
+                }
+            });
+        });
+    </script>
+}
