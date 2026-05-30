@@ -10,7 +10,9 @@ public class SingerController(ApplicationDbContext db, CloudinaryService cloudin
 {
     public async Task<IActionResult> Index()
     {
-        return View(await db.Singers.ToListAsync());
+        return View(await db.Singers
+            .Include(s => s.Songs.Where(song => song.Status == 1))
+            .ToListAsync());
     }
 
     public async Task<IActionResult> Details(int id)
