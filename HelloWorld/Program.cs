@@ -23,7 +23,8 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var db = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-    await DbSeeder.SeedAsync(db);
+    try { await DbSeeder.SeedAsync(db, app.Environment.IsDevelopment()); }
+    catch (Exception ex) { scope.ServiceProvider.GetRequiredService<ILogger<Program>>().LogWarning(ex, "Seeding skipped."); }
 }
 
 if (app.Environment.IsDevelopment())
@@ -45,7 +46,7 @@ app.MapStaticAssets();
 
 app.MapControllerRoute(
         name: "default",
-        pattern: "{controller=Category}/{action=Index}/{id?}")
+        pattern: "{controller=Song}/{action=Index}/{id?}")
     .WithStaticAssets();
 
 app.MapRazorPages()

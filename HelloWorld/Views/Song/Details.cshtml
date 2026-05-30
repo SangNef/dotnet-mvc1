@@ -1,0 +1,84 @@
+@model HelloWorld.Models.Song
+@{ ViewData["Title"] = Model.Title; }
+
+<div class="d-flex justify-content-between align-items-center mb-4">
+    <h1 class="mb-0">@Model.Title</h1>
+    <div class="d-flex gap-2">
+        <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-warning">Sửa</a>
+        <a asp-action="Index" class="btn btn-secondary">← Quay lại</a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4 mb-4">
+        @if (!string.IsNullOrEmpty(Model.ThumbnailUrl))
+        {
+            <img src="@Model.ThumbnailUrl" alt="@Model.Title"
+                 class="img-fluid rounded shadow" style="max-height:300px;object-fit:cover;width:100%"/>
+        }
+        else
+        {
+            <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                 style="height:240px">
+                <i class="bi bi-music-note-list" style="font-size:80px;color:#ccc"></i>
+            </div>
+        }
+
+        @if (!string.IsNullOrEmpty(Model.Mp3Link))
+        {
+            <div class="mt-3">
+                <audio controls class="w-100" preload="none">
+                    <source src="@Model.Mp3Link"/>
+                </audio>
+                <a href="@Model.Mp3Link" target="_blank" class="btn btn-success w-100 mt-2">
+                    <i class="bi bi-play-fill"></i> Mở trong tab mới
+                </a>
+            </div>
+        }
+    </div>
+
+    <div class="col-md-8">
+        <table class="table table-borderless">
+            <tbody>
+                <tr>
+                    <th style="width:160px">Ca sĩ</th>
+                    <td>
+                        <a asp-controller="Singer" asp-action="Details" asp-route-id="@Model.SingerId">
+                            @Model.Singer?.Name
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Nhạc sĩ</th>
+                    <td>
+                        <a asp-controller="Composer" asp-action="Details" asp-route-id="@Model.ComposerId">
+                            @Model.Composer?.Name
+                        </a>
+                    </td>
+                </tr>
+                <tr>
+                    <th>Ngày phát hành</th>
+                    <td>@(Model.ReleaseDate.HasValue ? Model.ReleaseDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+                </tr>
+                <tr>
+                    <th>Ngày tạo</th>
+                    <td>@Model.CreatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                </tr>
+                <tr>
+                    <th>Cập nhật lần cuối</th>
+                    <td>@Model.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</td>
+                </tr>
+            </tbody>
+        </table>
+
+        @if (!string.IsNullOrEmpty(Model.Lyrics))
+        {
+            <div class="card mt-3">
+                <div class="card-header fw-semibold">
+                    <i class="bi bi-card-text me-1"></i> Lời bài hát
+                </div>
+                <div class="card-body">@Html.Raw(Model.Lyrics)</div>
+            </div>
+        }
+    </div>
+</div>

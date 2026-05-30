@@ -1,0 +1,129 @@
+@model HelloWorld.Helpers.PaginatedList<HelloWorld.Models.Song>
+@{ ViewData["Title"] = "Bài hát"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Danh sách bài hát</h1>
+    <a asp-action="Create" class="btn btn-primary">+ Thêm bài hát</a>
+</div>
+
+<form method="get" class="d-flex gap-2 mb-3">
+    <input type="text" name="searchTerm" value="@ViewBag.SearchTerm" class="form-control"
+           placeholder="Tìm theo tiêu đề..." style="max-width:360px"/>
+    <button type="submit" class="btn btn-outline-primary">
+        <i class="bi bi-search"></i> Tìm kiếm
+    </button>
+    @if (!string.IsNullOrEmpty(ViewBag.SearchTerm as string))
+    {
+        <a asp-action="Index" class="btn btn-outline-secondary">Xóa bộ lọc</a>
+    }
+</form>
+
+<form id="ajaxForm">@Html.AntiForgeryToken()</form>
+
+<table class="table table-bordered table-hover align-middle">
+    <thead class="table-dark">
+        <tr>
+            <th style="width:70px">Ảnh</th>
+            <th>Tiêu đề</th>
+            <th>Ca sĩ</th>
+            <th>Nhạc sĩ</th>
+            <th>Phát hành</th>
+            <th style="width:70px" class="text-center">Play</th>
+            <th style="width:210px"></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var song in Model)
+        {
+            <tr id="row-@song.Id">
+                <td>
+                    @if (!string.IsNullOrEmpty(song.ThumbnailUrl))
+                    {
+                        <img src="@song.ThumbnailUrl" alt="@song.Title"
+                             style="width:60px;height:60px;object-fit:cover" class="rounded"/>
+                    }
+                    else
+                    {
+                        <div class="bg-light rounded d-flex align-items-center justify-content-center"
+                             style="width:60px;height:60px">
+                            <i class="bi bi-music-note text-secondary"></i>
+                        </div>
+                    }
+                </td>
+                <td class="fw-semibold">@song.Title</td>
+                <td>@(song.Singer?.Name ?? "—")</td>
+                <td>@(song.Composer?.Name ?? "—")</td>
+                <td class="text-nowrap">@(song.ReleaseDate.HasValue ? song.ReleaseDate.Value.ToString("dd/MM/yyyy") : "—")</td>
+                <td class="text-center">
+                    @if (!string.IsNullOrEmpty(song.Mp3Link))
+                    {
+                        <a href="@song.Mp3Link" target="_blank" class="btn btn-sm btn-success" title="Nghe bài hát">
+                            <i class="bi bi-play-fill"></i>
+                        </a>
+                    }
+                    else
+                    {
+                        <span class="text-muted small">—</span>
+                    }
+                </td>
+                <td>
+                    <a asp-action="Details" asp-route-id="@song.Id" class="btn btn-sm btn-info">Chi tiết</a>
+                    <a asp-action="Edit"    asp-route-id="@song.Id" class="btn btn-sm btn-warning">Sửa</a>
+                    <button type="button" class="btn btn-sm btn-danger"
+                            onclick="deleteSong(@song.Id, '@song.Title.Replace("'", "\\'")' )">Xóa</button>
+                </td>
+            </tr>
+        }
+        @if (!Model.Any())
+        {
+            <tr>
+                <td colspan="7" class="text-center text-muted py-4">Không có bài hát nào.</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@if (Model.TotalPages > 1)
+{
+    <nav aria-label="Phân trang">
+        <ul class="pagination flex-wrap">
+            <li class="page-item @(!Model.HasPreviousPage ? "disabled" : "")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-page="@(Model.PageIndex - 1)"
+                   asp-route-searchTerm="@ViewBag.SearchTerm">← Trước</a>
+            </li>
+            @for (int i = 1; i <= Model.TotalPages; i++)
+            {
+                <li class="page-item @(i == Model.PageIndex ? "active" : "")">
+                    <a class="page-link" asp-action="Index"
+                       asp-route-page="@i"
+                       asp-route-searchTerm="@ViewBag.SearchTerm">@i</a>
+                </li>
+            }
+            <li class="page-item @(!Model.HasNextPage ? "disabled" : "")">
+                <a class="page-link" asp-action="Index"
+                   asp-route-page="@(Model.PageIndex + 1)"
+                   asp-route-searchTerm="@ViewBag.SearchTerm">Sau →</a>
+            </li>
+        </ul>
+    </nav>
+}
+
+@section Scripts {
+    <script>
+        async function deleteSong(id, title) {
+            if (!confirm('Xóa bài hát "' + title + '"?')) return;
+            const token = document.querySelector('#ajaxForm input[name="__RequestVerificationToken"]').value;
+            const res = await fetch('@Url.Action("DeleteAjax", "Song")', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: '__RequestVerificationToken=' + encodeURIComponent(token) + '&id=' + id
+            });
+            if (res.ok) {
+                document.getElementById('row-' + id)?.remove();
+            } else {
+                alert('Xóa thất bại, vui lòng thử lại.');
+            }
+        }
+    </script>
+}

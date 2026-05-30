@@ -1,216 +1,172 @@
-# XÂY DỰNG HỆ THỐNG QUẢN LÝ KHÓA HỌC (COURSE MANAGEMENT SYSTEM) \_ KHÔNG AI PROMPT
+# MUSIC MANAGEMENT SYSTEM
 
 ## 1. Mục tiêu dự án
 
-Thiết lập một ứng dụng quản trị khóa học dựa trên nền tảng **ASP.NET Core 8.0 MVC** và hệ quản trị cơ sở dữ liệu **MySQL**. Dự án yêu cầu giải quyết các bài toán về quản lý quan hệ dữ liệu (1-N), tích hợp dịch vụ lưu trữ đám mây bên thứ ba và xử lý nội dung văn bản (Rich Text).
+Thiết lập một ứng dụng quản lý âm nhạc dựa trên nền tảng ASP.NET Core 8.0 MVC và MySQL. Dự án yêu cầu giải quyết bài toán quản lý dữ liệu với nhiều khóa ngoại (1-N từ hai phía), thực hiện phân trang, tìm kiếm nâng cao, tích hợp dịch vụ lưu trữ ảnh và xử lý văn bản giàu.
+
+---
 
 ## 2. Đặc tả cơ sở dữ liệu
 
-Hệ thống yêu cầu thiết lập hai thực thể chính với mối quan hệ **Một - Nhiều** (Một danh mục chứa nhiều khóa học):
+Hệ thống gồm ba thực thể chính: bài hát, ca sĩ, nhạc sĩ. Một bài hát thuộc về một Ca sĩ và một Nhạc sĩ.
 
-### 2.1. Thực thể `Category` (Danh mục)
+### 2.1. Thực thể Singer (Ca sĩ) và Composer (Nhạc sĩ)
 
-- **Id (int):** Khóa chính, tự tăng.
-- **Name (string):** Tên danh mục (Yêu cầu duy nhất, ví dụ: Công nghệ thông tin, Kinh tế, Ngoại ngữ).
-- **Description (string):** Mô tả tóm tắt về danh mục.
+| Trường | Kiểu | Mô tả |
+|--------|------|-------|
+| `Id` | `int` | Khóa chính, tự tăng |
+| `Name` | `string` | Tên nghệ sĩ (Bắt buộc) |
+| `Biography` | `string` | Tiểu sử chi tiết (Lưu mã HTML từ CKEditor) |
+| `ImageUrl` | `string` | Ảnh đại diện nghệ sĩ (Lưu link Cloudinary) |
 
-### 2.2. Thực thể `Course` (Khóa học)
+### 2.2. Thực thể Song (Bài hát)
 
-- **Id (int):** Khóa chính, tự tăng.
-- **Title (string):** Tiêu đề khóa học (Bắt buộc, tối thiểu 10 ký tự).
-- **Description (string):** Mô tả ngắn gọn (Văn bản thuần).
-- **Content (string):** Nội dung chi tiết (Lưu trữ dưới dạng mã HTML).
-- **ImageUrl (string):** Đường dẫn tập tin ảnh lưu trữ trên Cloudinary.
-- **Price (decimal):** Học phí của khóa học.
-- **StartDate (DateTime)**: Ngày bắt đầu khóa học.
-- **EndDate (DateTime)**: Ngày kết thúc khóa học.
-- **CategoryId (int):** Khóa ngoại tham chiếu đến bảng `Category`.
-- **Status (int):** Trạng thái khoá học, 1 là active, 0 là đã xoá.
+| Trường | Kiểu | Mô tả |
+|--------|------|-------|
+| `Id` | `int` | Khóa chính, tự tăng |
+| `Title` | `string` | Tiêu đề bài hát (Bắt buộc) |
+| `Lyrics` | `string` | Lời bài hát hoặc nội dung chi tiết (Mã HTML) |
+| `ThumbnailUrl` | `string` | Ảnh bìa bài hát (Lưu link Cloudinary) |
+| `Mp3Link` | `string` | Link file mp3 |
+| `ReleaseDate` | `DateTime` | Ngày phát hành |
+| `CreatedAt` | `DateTime` | Ngày tạo |
+| `UpdatedAt` | `DateTime` | Ngày update |
+| `SingerId` | `int` | Khóa ngoại tham chiếu đến bảng Singer |
+| `ComposerId` | `int` | Khóa ngoại tham chiếu đến bảng Composer |
+| `Status` | `int` | `1` = Active (Hiển thị), `0` = Soft Deleted (Đã xóa) |
 
 ---
 
 ## 3. Yêu cầu chức năng chi tiết
 
-### 3.1. Khởi tạo và Quản trị dữ liệu mẫu (Data Seeding)
+### 3.1. Khởi tạo dữ liệu (Data Seeding)
 
-- Triển khai lớp `DbInitializer` thực hiện quy trình:
-  1.  Xóa dữ liệu cũ (Reset) tại môi trường phát triển (Development).
-  2.  Khởi tạo ít nhất 05 danh mục mặc định.
-  3.  Khởi tạo dữ liệu mẫu cho 20 khóa học.
+Triển khai `DbInitializer` thực hiện:
 
-### 3.2. Quản lý danh sách khóa học (Index)
+- Reset dữ liệu cũ tại môi trường Development.
+- Khởi tạo ít nhất 05 Ca sĩ và 05 Nhạc sĩ mẫu.
+- Khởi tạo 50 bài hát mẫu.
 
-- Truy xuất danh sách khóa học bao gồm thông tin thực thể liên kết (`Category`).
-- Hiển thị hình ảnh đại diện trực tiếp từ CDN của Cloudinary.
-- Triển khai bộ lọc tìm kiếm theo tiêu đề và phân loại theo danh mục.
+### 3.2. Quản lý danh sách bài hát (Index) - Tìm kiếm & Phân trang
 
-### 3.3. Luồng nghiệp vụ Thêm mới và Cập nhật (Create/Update)
+- **Tìm kiếm:** Cho phép tìm kiếm bài hát theo tiêu đề (`Title`).
+- **Play:** Có button play bài hát, cho phép click và mở bài hát vừa chọn.
+- **Hiển thị:** Hiển thị thông tin bài hát kèm tên Ca sĩ và Nhạc sĩ (Sử dụng `.Include()`).
+- **Phân trang:** Chia danh sách bài hát thành nhiều trang (ví dụ: 10 bài hát/trang). Yêu cầu hiển thị thanh điều hướng trang (Previous, Next, các số trang).
 
-- **Dữ liệu danh mục:** Sử dụng Dropdown list (Select menu) để lựa chọn danh mục.
-- **Daterange Picker:** Được sử dụng để thêm ngày bắt đầu và kết thúc khoá học.
-- **Xử lý hình ảnh:**
-  - Upload ảnh lên Cloudinary.
-  - Lưu trữ URL tuyệt đối được trả về vào trường `ImageUrl` trong cơ sở dữ liệu.
-- **Soạn thảo nội dung:**
-  - Tích hợp **CKEditor 5** vào trường `Content`.
-  - Đảm bảo dữ liệu HTML được đồng bộ chính xác từ bộ soạn thảo vào Model khi gửi yêu cầu (Postback).
-- **Ràng buộc dữ liệu (Validation):**
-  - Kiểm tra tính hợp lệ của dữ liệu ở cả hai phía Client-side và Server-side.
-  - Sử dụng `ModelState` để xử lý và hiển thị thông báo lỗi chi tiết trên giao diện.
+### 3.3. Thêm mới và Cập nhật (Create/Update)
 
-### 3.4. Hiển thị nội dung chi tiết (Details)
+- **Dropdown:** Cung cấp 02 danh sách chọn (Select menu) cho Ca sĩ và Nhạc sĩ.
+- **Hình ảnh:** Tải ảnh lên Cloudinary và lưu URL vào trường `ThumbnailUrl`.
+- **Nội dung:** Tích hợp CKEditor 5 để nhập lời bài hát (`Lyrics`).
+- **Validation:**
+  - Tiêu đề bài hát tối thiểu 5 ký tự.
+  - Bắt buộc chọn Ca sĩ và Nhạc sĩ.
+  - Ngày phát hành không được lớn hơn ngày hiện tại.
 
-- Trình bày thông tin đầy đủ của khóa học.
-- Xử lý hiển thị trường nội dung (`Content`) thông qua phương thức `@Html.Raw()` để đảm bảo trình duyệt render đúng định dạng HTML từ CKEditor.
+### 3.4. Chi tiết và Xóa mềm
 
-### 3.5. Xoá thông tin khoá học
-
-- Có confirm trước khi xoá.
-- Sử dụng js để call action trong controller.
-- Chuyển đổi trạng thái khoá học về 0.
+- **Details:** Hiển thị đầy đủ thông tin bài hát, render lời bài hát từ HTML bằng `@Html.Raw()`. Có nút play bài hát.
+- **Delete:** Sử dụng JavaScript (AJAX/Fetch) để gọi Action xóa. Không xóa bản ghi khỏi DB mà chuyển `Status` về `0`.
 
 ---
 
-## 4. Yêu cầu kỹ thuật và Kiến trúc
+## 4. Yêu cầu kỹ thuật
 
-- **Môi trường phát triển:** JetBrains Rider.
-- **Công nghệ lõi:** .NET 8.0 MVC, Entity Framework Core (Pomelo Provider).
-- **Dịch vụ lưu trữ ảnh:** Cloudinary API.
-- **Thư viện UI:** Bootstrap 5 hoặc Tailwinds.
-- **Cấu trúc mã nguồn:**
-  - Thực hiện toàn bộ mã nguồn thủ công (Không sử dụng tính năng Scaffolding).
-  - Sử dụng **ViewModel** để tách biệt dữ liệu giao diện và thực thể cơ sở dữ liệu (Database Entity).
-  - Áp dụng **Dependency Injection** để quản lý DbContext và các Services.
+- **Framework:** .NET 8.0 MVC, EF Core (Pomelo Provider).
+- **Kiến trúc:** Sử dụng ViewModel để nhận dữ liệu từ Form (bao gồm `IFormFile` cho ảnh).
+- **Thư viện:** `CloudinaryDotNet`, CKEditor 5 (CDN), Bootstrap 5.
+- **Quy tắc:** Thực hiện thủ công (No Scaffolding), áp dụng Dependency Injection.
 
 ---
 
-## 5. Tiêu chí đánh giá
+## 5. Thang điểm (Tổng 10 điểm)
 
-1.  **Tính ổn định:** Hệ thống hoạt động không lỗi khi thực hiện các thao tác CRUD.
-2.  **Tính bảo mật:**
-    - Phòng chống tấn công XSS khi hiển thị nội dung Rich Text.
-    - Sử dụng Anti-forgery tokens cho tất cả các Form.
-3.  **Trải nghiệm người dùng:** Giao diện trực quan, xử lý lỗi nhập liệu thân thiện, tốc độ phản hồi của việc upload ảnh tối ưu.
-4.  **Chất lượng mã nguồn:** Tuân thủ quy tắc đặt tên, tách biệt rõ ràng các tầng xử lý (Separation of Concerns).
-
-## 6. Hướng dẫn setup model quan hệ.
-
-Để thiết lập quan hệ **Một - Nhiều (One-to-Many)** giữa `Category` và `Course` trong Entity Framework Core, lập trình viên cần thực hiện cấu hình tại các lớp Model (Entities) thông qua các thuộc tính điều hướng (Navigation Properties) và thuộc tính khóa ngoại (Foreign Key).
+| Hạng mục | Điểm | Tiêu chí |
+|----------|------|----------|
+| Thiết lập Model & Quan hệ | 1.5đ | Cấu hình đúng thực thể, khóa ngoại và quan hệ Một - Nhiều giữa 3 bảng |
+| Khởi tạo dữ liệu - Seeder | 1.0đ | Reset và Seed dữ liệu mẫu thành công bằng `DbInitializer` |
+| Chức năng Danh sách & Tìm kiếm | 2.0đ | Hiển thị đúng dữ liệu liên kết và tìm kiếm chính xác theo từ khóa |
+| Chức năng Phân trang | 1.5đ | Thực hiện phân trang logic tại Server và hiển thị thanh điều hướng tại View |
+| Thêm mới & Cập nhật | 2.0đ | Tích hợp thành công Dropdown đôi, Cloudinary Upload và CKEditor |
+| Xử lý Xóa mềm & JavaScript | 1.0đ | Thực hiện xóa qua AJAX và cập nhật trạng thái `Status` |
+| Chất lượng mã nguồn & UI | 1.0đ | Code sạch, sử dụng ViewModel, giao diện Bootstrap dễ nhìn |
 
 ---
 
-### 1. Định nghĩa thực thể `Category` (Bên "Một")
+## 6. Hướng dẫn setup quan hệ đặc thù (2 Khóa ngoại)
 
-Trong quan hệ này, một danh mục có thể chứa nhiều khóa học. Ta cần sử dụng một tập hợp (thường là `ICollection`) để đại diện cho danh sách các khóa học liên kết.
+### 6.1. Cấu trúc thực thể Song
 
 ```csharp
-using System.Collections.ObjectModel;
-
-namespace YourProject.Models;
-
-public class Category
+public class Song
 {
     public int Id { get; set; }
 
-    // Thuộc tính điều hướng: Một danh mục có nhiều khóa học
-    public virtual ICollection<Course> Courses { get; set; } = new Collection<Course>();
+    public string Title { get; set; } = string.Empty;
+
+    public int SingerId { get; set; }
+
+    [ForeignKey("SingerId")]
+    public virtual Singer? Singer { get; set; }
+
+    public int ComposerId { get; set; }
+
+    [ForeignKey("ComposerId")]
+    public virtual Composer? Composer { get; set; }
+
+    public int Status { get; set; } = 1;
 }
 ```
 
-### 2. Định nghĩa thực thể `Course` (Bên "Nhiều")
-
-Mỗi khóa học sẽ thuộc về duy nhất một danh mục. Ta cần khai báo cả **khóa ngoại (Foreign Key)** và **thuộc tính điều hướng đơn (Reference Navigation Property)**.
-
-```csharp
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace YourProject.Models;
-
-public class Course
-{
-    public int Id { get; set; }
-
-    // Thuộc tính khóa ngoại (Foreign Key)
-    public int CategoryId { get; set; }
-
-    // Thuộc tính điều hướng: Một khóa học thuộc về một danh mục
-    [ForeignKey("CategoryId")]
-    public virtual Category? Category { get; set; }
-}
-```
-
----
-
-### 3. Cấu hình chi tiết qua Fluent API (Tùy chọn nhưng khuyến khích)
-
-Mặc dù EF Core có khả năng tự nhận diện quan hệ thông qua các quy tắc đặt tên (Conventions), việc sử dụng **Fluent API** trong lớp `AppDbContext` giúp tường minh hóa cấu trúc và kiểm soát các ràng buộc như xóa dữ liệu liên lụy (Cascade Delete).
-
-Mở tập tin `Data/AppDbContext.cs` và cập nhật phương thức `OnModelCreating`:
+### 6.2. Cấu hình Fluent API trong AppDbContext
 
 ```csharp
 protected override void OnModelCreating(ModelBuilder modelBuilder)
 {
     base.OnModelCreating(modelBuilder);
 
-    // Cấu hình quan hệ Một - Nhiều
-    modelBuilder.Entity<Course>()
-        .HasOne(c => c.Category)           // Khóa học có một Danh mục
-        .WithMany(cat => cat.Courses)      // Danh mục có nhiều Khóa học
-        .HasForeignKey(c => c.CategoryId)  // Chỉ định khóa ngoại là CategoryId
-        .OnDelete(DeleteBehavior.Restrict); // Ngăn xóa Danh mục nếu đang có Khóa học tham chiếu đến
+    // Quan hệ Song - Singer
+    modelBuilder.Entity<Song>()
+        .HasOne(s => s.Singer)
+        .WithMany(a => a.Songs)
+        .HasForeignKey(s => s.SingerId)
+        .OnDelete(DeleteBehavior.Restrict);
+
+    // Quan hệ Song - Composer
+    modelBuilder.Entity<Song>()
+        .HasOne(s => s.Composer)
+        .WithMany(c => c.Songs)
+        .HasForeignKey(s => s.ComposerId)
+        .OnDelete(DeleteBehavior.Restrict);
 }
 ```
 
----
-
-### 4. Giải thích các thành phần kỹ thuật
-
-- **`virtual` Keyword:** Việc đánh dấu thuộc tính điều hướng là `virtual` cho phép EF Core sử dụng cơ chế **Lazy Loading** (chỉ tải dữ liệu liên kết khi thực sự cần truy cập đến).
-- **`ICollection<T>`:** Khởi tạo mặc định `new Collection<T>()` giúp tránh lỗi `NullReferenceException` khi thực hiện thêm mới dữ liệu vào danh sách điều hướng.
-- **`DeleteBehavior.Restrict`:** Trong các hệ thống quản lý, thông thường ta không cho phép xóa một `Category` nếu danh mục đó vẫn đang chứa `Course`. Sử dụng `Restrict` hoặc `NoAction` thay vì `Cascade` giúp bảo vệ toàn vẹn dữ liệu.
-
-### 5. Cách truy vấn dữ liệu liên kết (Eager Loading)
-
-Khi lấy danh sách khóa học ở Controller, để hiển thị được tên danh mục ở View, bạn phải sử dụng phương thức `.Include()`:
+### 6.3. Logic Tìm kiếm và Phân trang gợi ý
 
 ```csharp
-var courses = await _context.Courses
-                            .Include(c => c.Category) // Yêu cầu lấy kèm dữ liệu Category
-                            .ToListAsync();
-```
-
-### 6. Hiển thị danh sách Category trong Form tạo mới Course.
-
-#### 1. Tại Controller (Action Create)
-
-Truy vấn danh sách danh mục và chuyển sang View thông qua `ViewBag` dưới dạng một `SelectList`.
-
-```csharp
-public async Task<IActionResult> Create()
+public async Task<IActionResult> Index(string searchTerm, int page = 1)
 {
-    // Lấy danh sách ID và Name để đổ vào Dropdown
-    var categories = await _context.Categories.ToListAsync();
-    ViewBag.CategoryId = new SelectList(categories, "Id", "Name");
+    int pageSize = 10;
 
-    return View();
+    var query = _context.Songs
+        .Include(s => s.Singer)
+        .Include(s => s.Composer)
+        .Where(s => s.Status == 1);
+
+    if (!string.IsNullOrEmpty(searchTerm))
+    {
+        query = query.Where(s => s.Title.Contains(searchTerm));
+    }
+
+    var totalItems = await query.CountAsync();
+
+    var songs = await query
+        .Skip((page - 1) * pageSize)
+        .Take(pageSize)
+        .ToListAsync();
+
+    // Truyền dữ liệu phân trang qua ViewModel hoặc ViewBag
+    return View(songs);
 }
 ```
-
-#### 2. Tại View (Create.cshtml)
-
-Sử dụng Tag Helper `asp-items` để tự động render các thẻ `<option>` cho HTML `<select>`.
-
-```html
-<div class="form-group">
-  <label>Danh mục khóa học</label>
-  <select asp-for="CategoryId" class="form-control" asp-items="ViewBag.CategoryId">
-    <option value="">-- Chọn danh mục --</option>
-  </select>
-  <span asp-validation-for="CategoryId" class="text-danger"></span>
-</div>
-```
-
-**Lưu ý:**
-
-- `asp-for="CategoryId"`: Liên kết giá trị được chọn với thuộc tính `CategoryId` của Model.
-- Nếu dùng **ViewModel**, nên đưa `IEnumerable<SelectListItem>` vào trực tiếp trong ViewModel thay vì dùng `ViewBag` để code chuyên nghiệp và an toàn hơn (Strongly Typed).

@@ -1,0 +1,89 @@
+@model HelloWorld.Models.SongViewModel
+@{ ViewData["Title"] = "Thêm bài hát"; }
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <h1 class="mb-0">Thêm bài hát</h1>
+    <a asp-action="Index" class="btn btn-secondary">← Quay lại</a>
+</div>
+
+<form asp-action="Create" method="post" enctype="multipart/form-data" style="max-width:760px">
+    <div asp-validation-summary="ModelOnly" class="alert alert-danger" role="alert"></div>
+
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label fw-semibold">Tiêu đề <span class="text-danger">*</span></label>
+        <input asp-for="Title" class="form-control" placeholder="Tối thiểu 5 ký tự"/>
+        <span asp-validation-for="Title" class="text-danger small"></span>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="SingerId" class="form-label fw-semibold">Ca sĩ <span class="text-danger">*</span></label>
+            <select asp-for="SingerId" asp-items="ViewBag.SingerId" class="form-select">
+                <option value="0">-- Chọn ca sĩ --</option>
+            </select>
+            <span asp-validation-for="SingerId" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="ComposerId" class="form-label fw-semibold">Nhạc sĩ <span class="text-danger">*</span></label>
+            <select asp-for="ComposerId" asp-items="ViewBag.ComposerId" class="form-select">
+                <option value="0">-- Chọn nhạc sĩ --</option>
+            </select>
+            <span asp-validation-for="ComposerId" class="text-danger small"></span>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-6 mb-3">
+            <label asp-for="ReleaseDate" class="form-label fw-semibold">Ngày phát hành</label>
+            <input asp-for="ReleaseDate" class="form-control" type="date"
+                   max="@DateTime.Today.ToString("yyyy-MM-dd")"/>
+            <span asp-validation-for="ReleaseDate" class="text-danger small"></span>
+        </div>
+        <div class="col-md-6 mb-3">
+            <label asp-for="Mp3Link" class="form-label fw-semibold">Link MP3</label>
+            <input asp-for="Mp3Link" class="form-control" placeholder="https://..."/>
+            <span asp-validation-for="Mp3Link" class="text-danger small"></span>
+        </div>
+    </div>
+
+    <div class="mb-3">
+        <label class="form-label fw-semibold">Ảnh bìa</label>
+        <input type="file" asp-for="ThumbnailFile" class="form-control" accept="image/*"
+               onchange="previewImage(this)"/>
+        <div class="mt-2" id="imagePreview" style="display:none">
+            <img id="previewImg" src="#" alt="Preview"
+                 style="height:140px;object-fit:cover;border-radius:6px"/>
+        </div>
+        <span asp-validation-for="ThumbnailFile" class="text-danger small"></span>
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="Lyrics" class="form-label fw-semibold">Lời bài hát</label>
+        <textarea id="Lyrics" name="Lyrics" class="form-control">@Model.Lyrics</textarea>
+    </div>
+
+    <div class="d-flex gap-2">
+        <button type="submit" class="btn btn-primary px-4">Thêm bài hát</button>
+        <a asp-action="Index" class="btn btn-secondary">Hủy</a>
+    </div>
+</form>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial"/>
+    <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.css" crossorigin="anonymous"/>
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.4.2/classic/ckeditor.js" crossorigin="anonymous"></script>
+    <script>
+        ClassicEditor.create(document.querySelector('#Lyrics')).catch(err => console.error(err));
+
+        function previewImage(input) {
+            const preview = document.getElementById('imagePreview');
+            const img = document.getElementById('previewImg');
+            if (input.files && input.files[0]) {
+                img.src = URL.createObjectURL(input.files[0]);
+                preview.style.display = 'block';
+            } else {
+                preview.style.display = 'none';
+            }
+        }
+    </script>
+}

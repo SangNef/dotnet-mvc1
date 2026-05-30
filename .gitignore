@@ -39,6 +39,10 @@ ScaffoldingReadMe.txt
 # dotenv environment variables file
 .env
 
+# ASP.NET Core secrets
+appsettings.json
+appsettings.*.json
+
 # Others
 ~$*
 *~

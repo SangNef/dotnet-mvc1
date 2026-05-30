@@ -10,6 +10,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Category> Categories { get; set; }
     public DbSet<Course> Courses { get; set; }
     public DbSet<User> Users { get; set; }
+    public DbSet<Singer> Singers { get; set; }
+    public DbSet<Composer> Composers { get; set; }
+    public DbSet<Song> Songs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -23,5 +26,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 property.SetMaxLength(256);
             }
         }
+
+        builder.Entity<Song>()
+            .HasOne(s => s.Singer)
+            .WithMany(a => a.Songs)
+            .HasForeignKey(s => s.SingerId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        builder.Entity<Song>()
+            .HasOne(s => s.Composer)
+            .WithMany(c => c.Songs)
+            .HasForeignKey(s => s.ComposerId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }
